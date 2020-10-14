@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"text/template"
@@ -36,7 +37,7 @@ func TestDiscoverTemplateFilesWithSingleFile(t *testing.T) {
 	cfgTemplate := NewTemplate()
 	vconfig := viper.New()
 
-	tempDir := fs.TempDirectoryPath("nginx-wrapper-unit-tests")
+	tempDir := tempDir("nginx-wrapper-unit-tests")
 	mkdir(tempDir, t)
 	confTemplateDir := tempDir + fs.PathSeparator + "conf"
 	mkdir(confTemplateDir, t)
@@ -78,7 +79,7 @@ func TestDiscoverTemplateFilesWithDirectory(t *testing.T) {
 	cfgTemplate := NewTemplate()
 	vconfig := viper.New()
 
-	tempDir := fs.TempDirectoryPath("nginx-wrapper-unit-tests")
+	tempDir := tempDir("nginx-wrapper-unit-tests")
 	mkdir(tempDir, t)
 	confTemplatePath := tempDir + fs.PathSeparator + "conf"
 	mkdir(confTemplatePath, t)
@@ -268,12 +269,12 @@ func TestCanTemplateSubLevelMapOverridesDefaultFromConfig(t *testing.T) {
 }
 
 func TestCanTemplateFile(t *testing.T) {
-	tempDir := fs.TempDirectoryPath("nginx-wrapper-unit-tests")
-	mkdir(tempDir, t)
-	defer os.RemoveAll(tempDir)
+	unitTestTempDir := tempDir("nginx-wrapper-unit-tests")
+	mkdir(unitTestTempDir, t)
+	defer os.RemoveAll(unitTestTempDir)
 
 	vconfig := viper.New()
-	vconfig.SetDefault("run_path", fs.TempDirectoryPath("nginx-wrapper"))
+	vconfig.SetDefault("run_path", tempDir("nginx-wrapper"))
 	vconfig.SetDefault("conf_path", vconfig.GetString("run_path")+fs.PathSeparator+"conf")
 	vconfig.Set(PluginName+".template_var_left_delim", "{{")
 	vconfig.Set(PluginName+".template_var_right_delim", "}}")
@@ -288,8 +289,8 @@ func TestCanTemplateFile(t *testing.T) {
 
 	config.PluginDefaults[PluginName] = configDefaults
 
-	source := tempDir + fs.PathSeparator + "test.txt.tmpl"
-	output := tempDir + fs.PathSeparator + "test.txt"
+	source := unitTestTempDir + fs.PathSeparator + "test.txt.tmpl"
+	output := unitTestTempDir + fs.PathSeparator + "test.txt"
 
 	templateText := `
 nginx_binary = {{.nginx_binary}}
@@ -446,4 +447,13 @@ func tempFile(name string, content string, t *testing.T) string {
 	}
 
 	return file.Name()
+}
+
+// tempDir generates a temporary directory path that has directory separators normalized.
+// Go on MacOS in some cases will generate paths with double directory separators and this
+// causes the path matching tests to fail. With this function, we can be assured that the
+// generated path is normalized.
+func tempDir(suffix string) string {
+	tempDir := fs.TempDirectoryPath(suffix)
+	return filepath.Clean(tempDir)
 }

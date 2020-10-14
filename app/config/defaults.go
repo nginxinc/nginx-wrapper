@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -61,7 +62,7 @@ var CoreDefaults = map[string]interface{}{
 	// list of enabled plugins - none by default
 	"enabled_plugins": []string{},
 	// path on filesystem to make the nginx run path root
-	"run_path": fs.TempDirectoryPath("nginx-wrapper"),
+	"run_path": filepath.Clean(fs.TempDirectoryPath("nginx-wrapper")),
 	// total number of cores OR if running in a cgroup (container),
 	// the total number of effective cores that can be used as returned
 	// by sched_getaffinity.
