@@ -1,0 +1,26 @@
+{
+  "enabled_plugins": [
+    "template",
+    "example"
+  ],
+  "log": {
+    "level": "TRACE",
+    "formatter_name": "TextFormatter",
+    "formatter_options": {
+      "full_timestamp": false
+    }
+  },
+  "template": {
+    "conf_template_path": "sample_configs/coprocess/nginx.conf.tmpl",
+    "delete_templated_conf_on_exit": false
+  },
+  "coprocess": {
+    "consul": {
+      "name": "consul",
+      "exec": [ "consul", "-boostrap" ],
+      "restarts": "unlimited",
+      "exec_event": "pre-start",
+      "stop_event": "exit"
+    }
+  }
+}

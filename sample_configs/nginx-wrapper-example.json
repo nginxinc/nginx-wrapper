@@ -1,0 +1,40 @@
+{
+  "nginx_binary": "nginx",
+  "run_path": "/tmp/nginx-wrapper",
+  "modules_path": "/usr/lib/nginx/modules",
+  "plugin_path": "./plugins",
+  "enabled_plugins": [
+    "template",
+    "example"
+  ],
+  "vcpu_count": 3,
+  "log": {
+    "level": "INFO",
+    "destination": "STDOUT",
+    "formatter_name": "TextFormatter",
+    "formatter_options": {
+      "full_timestamp": true,
+      "pad_level_text": true
+    }
+  },
+  "template": {
+    "conf_template_path": "./nginx.conf.tmpl",
+    "conf_output_path": "/tmp/nginx-wrapper/conf",
+    "template_suffix": ".tmpl",
+    "template_var_left_delim": "[[",
+    "template_var_right_delim": "]]",
+    "delete_templated_conf_on_exit": true,
+    "delete_run_path_on_exit": false,
+    "run_path_subdirs": [
+      "client_body",
+      "conf",
+      "proxy",
+      "fastcgi",
+      "uswsgi",
+      "scgi"
+    ]
+  },
+  "example": {
+    "example_key_1": "five"
+  }
+}

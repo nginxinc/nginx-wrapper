@@ -1,0 +1,97 @@
+# Core configuration
+
+# By default searches $PATH for the binary "nginx".
+# Absolute and relative paths are also acceptable.
+nginx_binary: nginx
+
+# The runtime directory of the nginx process. Configuration and other
+# related files will be copied into this directory.
+# By default assigns the value of os.TempDir() + '/nginx-wrapper'.
+run_path: /tmp/nginx-wrapper
+
+# Uses the value of --modules_path as returned by "nginx -V" by default.
+modules_path: /usr/lib/nginx/modules
+
+# Path to read nginx-wrapper plugins from.
+# Default value is: ./plugins/
+plugin_path: ./plugins
+
+# Array of plugins that are enabled to run in the NGINX Wrapper.
+# By default no plugins are enabled.
+enabled_plugins:
+  - template
+  - example
+
+# Core count that can be used for templating the number of worker processes
+# that we want NGINX to start.
+# Default value: total number of cores OR if running in a cgroup (container),
+# the total number of effective cores that can be used as returned by
+# sched_getaffinity.
+vcpu_count: 3
+
+# Logging configuration
+log:
+  # Log verbosity for output. Default value is INFO.
+  # Valid values are: TRACE, DEBUG, INFO, WARN, ERROR, PANIC, FATAL
+  level: INFO
+
+  # Log output destination. Default value is STDOUT.
+  # Valid values are: STDOUT, STDERR, file path
+  destination: STDOUT
+
+  # Log format for output. Default value is TextFormatter
+  # Valid values are: TextFormatter, JSONFormatter
+  formatter_name: TextFormatter
+
+  # Section containing options for the log formatter.
+  # Reference https://github.com/sirupsen/logrus for valid values
+  # Both snake case and title case are acceptable
+  formatter_options:
+    full_timestamp: true
+    pad_level_text: true
+
+# Plugin configuration configuration occurs in its own block named after the
+# plugin.
+template:
+  # Subdirectories to create under the run_path.
+  # Default values are: "client_body", "proxy", "fastcgi", "uswsgi", "scgi"
+  run_path_subdirs:
+    - client_body
+    - conf
+    - proxy
+    - fastcgi
+    - uswsgi
+    - scgi
+
+  # By default we look in the current directory for the file
+  # 'nginx.conf.' + template_suffix. A directory path is also acceptable.
+  conf_template_path: ./nginx.conf.tmpl
+
+  # The default value uses $run_path + '/conf'. If conf_template_path is a
+  # directory, there must be a file within the root of that directory named
+  # nginx.conf.tmpl because that file will be expected at the end of this
+  # path.
+  conf_output_path: /tmp/nginx-wrapper/conf
+
+  # The suffix that for all files that will undergo templating. By default
+  # the value is: .tmpl
+  template_suffix: .tmpl
+
+  # The substitution characters used in templating. By default NGINX Wrapper
+  # uses two square brackets surrounding the templating directive. This differs
+  # from the default for go templates.
+  template_var_left_delim: [ [
+  template_var_right_delim: ] ]
+
+  # Flag indicating if we want to delete the templated configuration output
+  # when the wrapper exits.
+  # Default value: true
+  delete_templated_conf_on_exit: true
+
+  # Flag indicating if we want to delete the nginx run directory when the
+  # wrapper exits.
+  # Default value: false
+  delete_run_path_on_exit: false
+
+example:
+  example_key_1: five

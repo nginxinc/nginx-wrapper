@@ -1,0 +1,16 @@
+enabled_plugins = [ "template", "example" ]
+
+[log]
+    level = "TRACE"
+
+    formatter_name = "TextFormatter"
+
+    [log.formatter_options]
+        full_timestamp = true
+
+[template]
+    conf_template_path = "sample_configs/simple/nginx.conf.tmpl"
+    delete_templated_conf_on_exit = false
+
+[example]
+    example_key_1 = "five"

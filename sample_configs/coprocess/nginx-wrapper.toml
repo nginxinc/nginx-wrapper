@@ -1,0 +1,39 @@
+enabled_plugins = [ "template", "coprocess" ]
+
+[log]
+    level = "TRACE"
+
+    formatter_name = "TextFormatter"
+
+    [log.formatter_options]
+        full_timestamp = true
+
+[template]
+    conf_template_path = "sample_configs/coprocess/nginx.conf.tmpl"
+    delete_templated_conf_on_exit = false
+
+[coprocess.consul]
+    # Name of the coprocess used in logging
+    name = "consul"
+    # Command to run as coprocess
+    exec = [ "consul", "agent", "-dev", "-log-level=info", "-ui" ]
+    # Command to run before terminating coprocess
+    stop_exec = [ "consul", "leave" ]
+    # User to setuid to when running coprocess (nginx-wrapper must be run as root)
+    user = ""
+    # Restart policy for when coprocess exits: never, unlimited, or integer value indicate times to restart
+    restarts = "unlimited"
+    # Flag indicating if the coprocess should be backgrounded, if false nginx-wrapper will wait for coprocess to exit
+    background = true
+    # nginx-wrapper event that will trigger start up of coprocess
+    exec_event = "pre-start"
+    # nginx-wrapper event that will trigger termination of coprocess
+    stop_event = "exit"
+
+[coprocess.whoami]
+    name = "whoami"
+    exec = [ "whoami" ]
+    restarts = "2"
+    background = false
+    exec_event = "start"
+    stop_event = "start"
