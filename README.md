@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper.svg?type=shield)](https://app.fossa.com/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper?ref=badge_shield)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![Make](https://github.com/nginxinc/nginx-wrapper/workflows/Make/badge.svg) [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper.svg?type=shield)](https://app.fossa.com/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper?ref=badge_shield)
 
 # NGINX Wrapper
 
