@@ -9,7 +9,7 @@ on:
 jobs:
 
   build:
-    name: Build
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
 
@@ -22,16 +22,11 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Get dependencies
-      run: |
-        cd app && go get -v -t -d ./...
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        fi
+    - name: make all
+      run: make all
 
-    - name: Build
-      run: cd app && go build -v .
+    - name: make test
+      run: make test
 
-    - name: Test
-      run: cd app && go test -v .
+    - name: make test-race
+      run: make test-race
