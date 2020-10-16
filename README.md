@@ -1,4 +1,6 @@
 # NGINX Wrapper
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnginxinc%2Fnginx-wrapper.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnginxinc%2Fnginx-wrapper?ref=badge_shield)
+
 
 NGINX Wrapper (nginx-wrapper) is a NGINX process wrapper written in go 
 that supports templating and plugins. Templating allows for modification
@@ -117,3 +119,5 @@ Please make sure to update tests as appropriate.
 ## License
 
 [Apache 2.0](./LICENSE)
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnginxinc%2Fnginx-wrapper.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnginxinc%2Fnginx-wrapper?ref=badge_large)
