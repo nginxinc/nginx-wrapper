@@ -20,7 +20,7 @@ DATE         ?= $(shell date -u +%FT%T%z)
 VERSION      ?= $(shell cat $(CURDIR)/.version 2> /dev/null || echo unknown)
 GITHASH      ?= $(shell git rev-parse HEAD)
 
-GOPATH        = $(CURDIR)/.gopath
+GOPATH        ?= $(CURDIR)/.gopath
 BIN           = $(GOPATH)/bin
 BASE          = $(GOPATH)/src/$(PACKAGE)
 LDFLAGS       = '-X main.githash=$(GITHASH) -X main.buildstamp=$(DATE) -X main.appversion=$(VERSION)'
@@ -95,6 +95,14 @@ $(BIN)/go2xunit:
 	$(info $(M) building go2xunit...)
 	$Q go get github.com/tebeka/go2xunit
 
+COMMITSAR = $(BIN)/commitsar
+$(BIN)/commitsar:
+	$(info $(M) building commitsar...)
+	$Q go get github.com/aevea/commitsar
+
+.PHONY: get-tools
+get-tools: $(GOLINT) $(GOLANGCILINT) $(GOCOVMERGE) $(GOCOV) $(GOCOVXML) $(GO2XUNIT) $(COMMITSAR) ## Retrieves and builds all the required tools
+
 # Tests
 
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
@@ -156,6 +164,15 @@ golangci-lint: deps $(GOLANGCILINT) ## Run golangci-lint check
 		$(GOLANGCILINT) --config $(CURDIR)/.golangci.toml --color always --issues-exit-code 0 --path-prefix lib/ run
 	@cd plugins/example; \
 		$(GOLANGCILINT) --config $(CURDIR)/.golangci.toml --color always --issues-exit-code 0 --path-prefix plugins/example/ run
+
+.PHONY: commitsar
+commitsar: $(COMMITSAR)  ## Run git commit linter
+	$(info $(M) running commitsar...) @
+	@ $(COMMITSAR)
+
+.PHONY: all-linters
+all-linters: lint golangci-lint commitsar ## Run all linters
+
 .PHONY: fmt
 fmt: ## Run source code formatter
 	$(info $(M) running gofmt...) ## Run gofmt on all source files
@@ -212,6 +229,39 @@ app: $(OUTPUT_DIR)/nginx-wrapper ## Build nginx-wrapper application
 .PHONY: plugins
 plugins: $(OUTPUT_DIR)/plugins ## Build all plugins
 
+# Docker based CI tasks
+
+.PHONY: ci-build-image
+ci-build-image: ## Builds a Docker image containing all of the build tools for the project
+	$(info $(M) building Docker build image) @
+	$Q docker build -t nginx-wrapper-build $(CURDIR)/build/
+
+.PHONY: ci-delete-image
+ci-delete-image: ## Removes the Docker image containing all of the build tools for the project
+	$(info $(M) removing Docker build image) @
+	$Q docker rmi nginx-wrapper-build
+
+.PHONY: ci-build-image-volume
+ci-build-image-volume: ci-build-image ## Builds Docker volume that caches the gopath between operations
+	$(info $(M) building Docker build volume to cache GOPATH) @
+	$Q docker volume create nginx-wrapper-build-container
+	$Q docker run --tty --rm --name nginx-wrapper-build-container --volume nginx-wrapper-build-container:/build/gopath nginx-wrapper-build /build/extract_gopath.sh
+
+.PHONY: ci-delete-image-volume
+ci-delete-image-volume: ## Removes the Docker volume proving gopath caching
+	$(info $(M) removing Docker build volume) @
+	$Q docker volume rm nginx-wrapper-build-container
+
+.PHONY: ci-all-linters
+ci-all-linters: ci-build-image-volume ## Runs all lint checks within a Docker container
+	$(info $(M) running git commit audit) @
+	$Q docker run --tty --rm --name nginx-wrapper-build-container --volume nginx-wrapper-build-container:/build/gopath --volume $(CURDIR):/build/src --workdir /build/src nginx-wrapper-build make all-linters
+
+.PHONY: ci-run-all-checks
+ci-run-all-checks: ci-all-linters ## Runs all build checks within a Docker container
+	$(info $(M) running unit tests) @
+	$Q docker run --tty --rm --name nginx-wrapper-build-container --volume nginx-wrapper-build-container:/build/gopath --volume $(CURDIR):/build/src --workdir /build/src nginx-wrapper-build make test-race
+
 # Misc
 
 .PHONY: clean
@@ -224,7 +274,7 @@ clean: ; $(info $(M) cleaning...)	@ ## Cleanup everything
 .PHONY: help
 help:
 	@grep -E '^[ a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}' | sort
 
 .PHONY: version
 version:
