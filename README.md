@@ -1,3 +1,5 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper.svg?type=shield)](https://app.fossa.com/projects/custom%2B1062%2Fgithub.com%2Fnginxinc%2Fnginx-wrapper?ref=badge_shield)
+
 # NGINX Wrapper
 
 NGINX Wrapper (nginx-wrapper) is a NGINX process wrapper written in go 
@@ -109,11 +111,9 @@ with your own):
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
-
-Please make sure to update tests as appropriate.
+Please refer to the [Contributing Guidelines](CONTRIBUTING.md).
 
 ## License
 
 [Apache 2.0](./LICENSE)
+[Dependency Notices](./NOTICE.md)
