@@ -1,13 +1,12 @@
-name: Go
+name: Make
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-
   build:
     name: Build and Test
     runs-on: ubuntu-latest
