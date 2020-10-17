@@ -8,10 +8,12 @@ of `nginx` conf files before start up and on reload. Plugins allow for
 integrating templating and events by hooking into `nginx` events such as 
 start up, reload and exit.
 
-If want to run NGINX, but you don't want to create a sidecar container 
-or load a full init system in your container just to do templating, run
-another process or to integrate with NGINX's reload life cycle, then
-this is the tool for you! 
+This is the tool for you, if want to run NGINX, but you don't want to 
+create a sidecar, load a full init system, or write custom code in 
+your container just to do:
+ * Templating
+ * Running another process
+ * Integrating with NGINX's reload life cycle
 
 ```
                      !WARNING!
