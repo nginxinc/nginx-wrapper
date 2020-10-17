@@ -254,7 +254,7 @@ ci-delete-image-volume: ## Removes the Docker volume proving gopath caching
 
 .PHONY: ci-all-linters
 ci-all-linters: ci-build-image-volume ## Runs all lint checks within a Docker container
-	$(info $(M) running git commit audit) @
+	$(info $(M) running all linters) @
 	$Q docker run --tty --rm --name nginx-wrapper-build-container --volume nginx-wrapper-build-container:/build/gopath --volume $(CURDIR):/build/src --workdir /build/src nginx-wrapper-build make all-linters
 
 .PHONY: ci-run-all-checks
