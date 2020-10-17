@@ -1,0 +1,11 @@
+name: "NGINX Wrapper CodeQL config"
+
+paths-ignore:
+  - build
+  - doc
+  - sample_configs
+paths:
+  - target
+  - app
+  - lib
+  - plugins
