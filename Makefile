@@ -33,6 +33,7 @@ ARCH          = $(shell uname -m | sed -e 's/x86_64/amd64/g' -e 's/i686/i386/g')
 PLATFORM      = $(shell uname | tr '[:upper:]' '[:lower:]')
 PLUGINS       = $(sort $(dir $(wildcard $(BASE)/plugins/*/)))
 DEBUG         = 0
+DISTPKGDIR    = 'target/package'
 
 GO      = go
 GODOC   = godoc
@@ -274,6 +275,17 @@ changelog: ## Outputs the changes since the last version committed
 		sed 's/: /:\t/g1' | \
 		column -s "	" -t | \
 		sed -e 's/^/ * /'
+
+$(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz: app
+	$(info $(M) building compressed binary of nginx-wrapper app for $(PLATFORM)_$(ARCH))
+	$Q mkdir -p $(DISTPKGDIR)
+	$Q gzip --stdout --name --best $(OUTPUT_DIR)/nginx-wrapper > $(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz
+
+$(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz.sha256sum: $(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz
+	$(info $(M) writing SHA256 checksum of nginx-wrapper app)
+	$Q cd $(DISTPKGDIR); sha256sum nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz > nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz.sha256sum
+
+package: $(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-$(VERSION).gz.sha256sum ## Builds packaged artifact of app
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning...)	@ ## Cleanup everything
