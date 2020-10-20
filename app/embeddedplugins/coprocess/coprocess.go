@@ -388,10 +388,10 @@ func (c *Coprocess) sendSignal(process *os.Process, signal os.Signal, name strin
 		if shouldProcessEnd && err.Error() == "os: process already finished" {
 			c.log.Debugf("(%v) failed for coprocess (%s) pid (%d): %v",
 				signal.String(), name, process.Pid, err)
+		} else {
+			return errors.Wrapf(err, "(%v) failed for coprocess (%s) pid (%d)",
+				signal.String(), name, process.Pid)
 		}
-
-		return errors.Wrapf(err, "(%v) failed for coprocess (%s) pid (%d)",
-			signal.String(), name, process.Pid)
 	}
 
 	return nil
