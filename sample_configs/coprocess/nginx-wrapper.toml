@@ -33,7 +33,8 @@ enabled_plugins = [ "template", "coprocess" ]
 [coprocess.whoami]
     name = "whoami"
     exec = [ "whoami" ]
-    restarts = "2"
+    restarts = "4"
+    time_between_restarts = "3s"
     background = false
     exec_event = "start"
     stop_event = "start"

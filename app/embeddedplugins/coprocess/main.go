@@ -153,12 +153,13 @@ func initCoprocess(section string, settings api.Settings) (Coprocess, error) {
 	stopExec := settings.GetStringSlice(fmt.Sprintf("coprocess.%s.stop_exec", section))
 	user := settings.GetString(fmt.Sprintf("coprocess.%s.user", section))
 	restarts := settings.GetString(fmt.Sprintf("coprocess.%s.restarts", section))
+	timeBetweenRestarts := settings.GetString(fmt.Sprintf("coprocess.%s.time_between_restarts", section))
 	background := settings.GetBool(fmt.Sprintf("coprocess.%s.background", section))
 	execEvent := settings.GetString(fmt.Sprintf("coprocess.%s.exec_event", section))
 	stopEvent := settings.GetString(fmt.Sprintf("coprocess.%s.stop_event", section))
 
-	cp, err := New(name, cpExec, stopExec, user, restarts, background, execEvent, stopEvent,
-		settings)
+	cp, err := New(name, cpExec, stopExec, user, restarts, timeBetweenRestarts, background,
+		execEvent, stopEvent, settings)
 
 	if err != nil {
 		err.ConfigSectionName = section

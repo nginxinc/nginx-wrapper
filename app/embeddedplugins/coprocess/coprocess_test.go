@@ -25,14 +25,14 @@ import (
 
 func TestInitErrors(t *testing.T) {
 	settings := api.Settings(viper.New())
-	_, err := New("", []string{}, []string{}, "", "unknown", false, "something",
+	_, err := New("", []string{}, []string{}, "", "unknown", "invalid", false, "something",
 		"something", settings)
 
 	if err == nil {
 		t.Error("no error returned for invalid init input values")
 	} else {
 		errMessageCount := len(err.InitFailureMessages)
-		if errMessageCount != 5 {
+		if errMessageCount != 6 {
 			t.Errorf("unexpected number of error messages received (%d)", errMessageCount)
 		}
 	}
@@ -51,7 +51,7 @@ func TestInterpolatedSettings(t *testing.T) {
 
 	exec := []string{"run", "${vcpu_count}", "${var1}=${unknown}"}
 	stopExec := []string{"stop", "hammertime", "${host_id}"}
-	coprocess, err := New("unittest", exec, stopExec, "testy", string(Never), false,
+	coprocess, err := New("unittest", exec, stopExec, "testy", string(Never), "", false,
 		"start", "exit", settings)
 
 	if err != nil {

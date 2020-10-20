@@ -1,7 +1,7 @@
 {
   "enabled_plugins": [
     "template",
-    "example"
+    "coprocess"
   ],
   "log": {
     "level": "TRACE",
@@ -17,10 +17,22 @@
   "coprocess": {
     "consul": {
       "name": "consul",
-      "exec": [ "consul", "-boostrap" ],
+      "exec": [ "consul", "agent", "-dev", "-log-level=info", "-ui" ],
+      "stop_exec": [ "consul", "leave" ],
+      "user": "",
       "restarts": "unlimited",
+      "background": true,
       "exec_event": "pre-start",
       "stop_event": "exit"
+    },
+    "whoami": {
+      "name": "whoami",
+      "exec": [ "whoami" ],
+      "restarts": "4",
+      "time_between_restarts": "3s",
+      "background": false,
+      "exec_event": "start",
+      "stop_event": "start"
     }
   }
 }

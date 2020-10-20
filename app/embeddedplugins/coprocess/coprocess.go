@@ -54,15 +54,16 @@ const (
 // Coprocess represents a process that will run alongside nginx and be
 // tied to a nginx start event and stop event.
 type Coprocess struct {
-	Name       string
-	Exec       []string
-	StopExec   []string
-	User       string
-	Restarts   RestartPolicy
-	Background bool
-	ExecEvent  string
-	StopEvent  string
-	Done       *abool.AtomicBool
+	Name               string
+	Exec               []string
+	StopExec           []string
+	User               string
+	Restarts           RestartPolicy
+	TimeBetweenRestart time.Duration
+	Background         bool
+	ExecEvent          string
+	StopEvent          string
+	Done               *abool.AtomicBool
 
 	cmd     *exec.Cmd
 	cmdLock *sync.RWMutex
@@ -95,14 +96,38 @@ func (c *Coprocess) MaxRestarts() int {
 // ExecuteCoprocess invokes the associated process and optionally runs it repeatedly according to the
 // associated restart policy.
 func (c *Coprocess) ExecuteCoprocess() error {
-	maxRestarts := c.MaxRestarts()
 	restartCount := 0
 
 	for {
+		// If the restart count is less than one, then it is the first invocation (no restarts yet)
 		if restartCount < 1 {
 			c.log.Tracef("initiating coprocess (%s)", c.Name)
+			// Otherwise, this is a restart
 		} else {
-			c.log.Tracef("initiating restart (%d) of coprocess (%s)", restartCount, c.Name)
+			// If a pause between restarts is specified, sleep between restarts for the specified period
+			if c.TimeBetweenRestart > 0 {
+				c.log.Debugf("sleeping for (%v) before restarting", c.TimeBetweenRestart)
+
+				if c.TimeBetweenRestart.Seconds() <= 1 {
+					time.Sleep(c.TimeBetweenRestart)
+				} else {
+					pauseStart := time.Now()
+					pauseEnd := pauseStart.Add(c.TimeBetweenRestart)
+
+					for time.Now().Before(pauseEnd) && c.Restarts != Terminating {
+						time.Sleep(1 * time.Second)
+					}
+				}
+
+				// Although we check for this state below, we check for it here because we don't
+				// want to confusingly display the trace log message about initiating a restart
+				if c.Restarts == Terminating {
+					break
+				}
+			}
+
+			c.log.Tracef("initiating restart (%d) of coprocess (%s) with restart policy (%v)",
+				restartCount, c.Name, c.Restarts)
 		}
 
 		c.cmdLock.Lock()
@@ -144,7 +169,7 @@ func (c *Coprocess) ExecuteCoprocess() error {
 		c.waitOnCmd(c.cmd, c.log)
 		c.cmdLock.RUnlock()
 
-		if c.Restarts != Unlimited && restartCount >= maxRestarts {
+		if c.Restarts != Unlimited && restartCount >= c.MaxRestarts() {
 			break
 		} else {
 			restartCount = 1 + restartCount
@@ -405,8 +430,8 @@ func (c *Coprocess) sendSignal(process *os.Process, signal os.Signal, name strin
 }
 
 // New creates a new instance of Coprocess and validates that the passed parameters are valid.
-func New(name string, exec []string, stopExec []string, user string, restarts string, background bool,
-	execEvent string, stopEvent string, settings api.Settings) (Coprocess, *InitError) {
+func New(name string, exec []string, stopExec []string, user string, restarts string, timeBetweenRestarts string,
+	background bool, execEvent string, stopEvent string, settings api.Settings) (Coprocess, *InitError) {
 
 	var initErrors []string
 
@@ -420,6 +445,19 @@ func New(name string, exec []string, stopExec []string, user string, restarts st
 	if !(restarts == string(Unlimited) || restarts == string(Never) || isASCIIDigit(restarts)) {
 		initErrors = append(initErrors, fmt.Sprintf("coprocess field 'restarts' is set to an invalid value "+
 			"(%s) - it must be 'never' or 'unlimited'", restarts))
+	}
+
+	var restartPauseDuration time.Duration
+
+	if timeBetweenRestarts != "" {
+		var parseDurationErr error
+		restartPauseDuration, parseDurationErr = time.ParseDuration(timeBetweenRestarts)
+		if parseDurationErr != nil {
+			initErrors = append(initErrors, fmt.Sprintf("coprocess field 'time_between_restarts' has an invalid duration: %s",
+				timeBetweenRestarts))
+		}
+	} else {
+		restartPauseDuration = time.Duration(0)
 	}
 
 	eventNames := events.GlobalEvents.EventNames()
@@ -442,15 +480,16 @@ func New(name string, exec []string, stopExec []string, user string, restarts st
 		settings)
 
 	instance := Coprocess{
-		Name:       name,
-		Exec:       interpolatedArgs["exec"],
-		StopExec:   interpolatedArgs["stopExec"],
-		User:       user,
-		Restarts:   RestartPolicy(restarts),
-		Background: background,
-		ExecEvent:  execEvent,
-		StopEvent:  stopEvent,
-		Done:       abool.NewBool(false),
+		Name:               name,
+		Exec:               interpolatedArgs["exec"],
+		StopExec:           interpolatedArgs["stopExec"],
+		User:               user,
+		Restarts:           RestartPolicy(restarts),
+		TimeBetweenRestart: restartPauseDuration,
+		Background:         background,
+		ExecEvent:          execEvent,
+		StopEvent:          stopEvent,
+		Done:               abool.NewBool(false),
 
 		cmdLock: &sync.RWMutex{},
 		log:     slog.NewLogger(name),
