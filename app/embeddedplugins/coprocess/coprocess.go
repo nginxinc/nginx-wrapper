@@ -45,7 +45,7 @@ const (
 	Unlimited RestartPolicy = "unlimited"
 	// Never restart policy means that the process will never be restarted if it exits.
 	Never RestartPolicy = "never"
-	// Terminating restart policy means that the wrapper is attempting to end the process
+	// Terminating restart policy means that the wrapper is attempting to end the process.
 	Terminating RestartPolicy = "terminating"
 
 	secondsToWaitForProcessExit = 5
@@ -104,28 +104,13 @@ func (c *Coprocess) ExecuteCoprocess() error {
 			c.log.Tracef("initiating coprocess (%s)", c.Name)
 			// Otherwise, this is a restart
 		} else {
-			// If a pause between restarts is specified, sleep between restarts for the specified period
-			if c.TimeBetweenRestart > 0 {
-				c.log.Debugf("sleeping for (%v) before restarting", c.TimeBetweenRestart)
+			c.SleepBetweenRestarts()
 
-				if c.TimeBetweenRestart.Seconds() <= 1 {
-					time.Sleep(c.TimeBetweenRestart)
-				} else {
-					pauseStart := time.Now()
-					pauseEnd := pauseStart.Add(c.TimeBetweenRestart)
-
-					for time.Now().Before(pauseEnd) && c.Restarts != Terminating {
-						time.Sleep(1 * time.Second)
-					}
-				}
-
-				// Although we check for this state below, we check for it here because we don't
-				// want to confusingly display the trace log message about initiating a restart
-				if c.Restarts == Terminating {
-					break
-				}
+			// Although we check for this state below, we check for it here because we don't
+			// want to confusingly display the trace log message about initiating a restart
+			if c.Restarts == Terminating {
+				break
 			}
-
 			c.log.Tracef("initiating restart (%d) of coprocess (%s) with restart policy (%v)",
 				restartCount, c.Name, c.Restarts)
 		}
@@ -177,6 +162,25 @@ func (c *Coprocess) ExecuteCoprocess() error {
 	}
 
 	return nil
+}
+
+// SleepBetweenRestarts waits for a configured duration until continuing.
+func (c *Coprocess) SleepBetweenRestarts() {
+	// If a pause between restarts is specified, sleep between restarts for the specified period
+	if c.TimeBetweenRestart > 0 {
+		c.log.Debugf("sleeping for (%v) before restarting", c.TimeBetweenRestart)
+
+		if c.TimeBetweenRestart.Seconds() <= 1 {
+			time.Sleep(c.TimeBetweenRestart)
+		} else {
+			pauseStart := time.Now()
+			pauseEnd := pauseStart.Add(c.TimeBetweenRestart)
+
+			for time.Now().Before(pauseEnd) && c.Restarts != Terminating {
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}
 }
 
 // ExecuteStopCmd executes the optional command associated with the coprocess to run when the
