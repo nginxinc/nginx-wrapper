@@ -45,6 +45,8 @@ const (
 	Unlimited RestartPolicy = "unlimited"
 	// Never restart policy means that the process will never be restarted if it exits.
 	Never RestartPolicy = "never"
+	// Terminating restart policy means that the wrapper is attempting to end the process
+	Terminating RestartPolicy = "terminating"
 
 	secondsToWaitForProcessExit = 5
 )
@@ -75,7 +77,7 @@ func (c Coprocess) String() string {
 // MaxRestarts returns the maximum number of restarts for the associated process with -1 indicating
 // an unlimited amount of restarts.
 func (c *Coprocess) MaxRestarts() int {
-	if c.Restarts == Never {
+	if c.Restarts == Never || c.Restarts == Terminating {
 		return 0
 	}
 	if c.Restarts == Unlimited {
@@ -104,6 +106,11 @@ func (c *Coprocess) ExecuteCoprocess() error {
 		}
 
 		c.cmdLock.Lock()
+
+		// Don't start process if it is marked as supposed to end
+		if c.Restarts == Terminating {
+			break
+		}
 
 		cmd, initCmdErr := c.initCoprocessCmd(c.Exec, c.log)
 		if initCmdErr != nil {
@@ -165,8 +172,8 @@ func (c *Coprocess) ExecuteStopCmd() error {
 	}
 
 	// Don't allow the process to restart because we are now in the shutdown sequence
-	if c.Restarts != Never {
-		c.Restarts = Never
+	if c.Restarts != Terminating {
+		c.Restarts = Terminating
 	}
 
 	stopLog.Tracef("issuing stop command for coprocess (%s)", c.Name)
@@ -283,8 +290,8 @@ func (c *Coprocess) attachCmdLogger(cmd *exec.Cmd, runLog *slog.Logger) error {
 // SIGTERM, SIGINT, or SIGKILL until the process exits.
 func (c *Coprocess) TerminateCoprocess() error {
 	// Mark that we don't want to restart the process after it exits
-	if c.Restarts != Never {
-		c.Restarts = Never
+	if c.Restarts != Terminating {
+		c.Restarts = Terminating
 	}
 
 	// If the process has exited and isn't set to restart, then we don't need to do anything
@@ -409,6 +416,7 @@ func New(name string, exec []string, stopExec []string, user string, restarts st
 	if len(exec) == 0 {
 		initErrors = append(initErrors, "coprocess field 'exec' is empty")
 	}
+	// note: the Terminating policy is filtered out here and can't be set by the user
 	if !(restarts == string(Unlimited) || restarts == string(Never) || isASCIIDigit(restarts)) {
 		initErrors = append(initErrors, fmt.Sprintf("coprocess field 'restarts' is set to an invalid value "+
 			"(%s) - it must be 'never' or 'unlimited'", restarts))
