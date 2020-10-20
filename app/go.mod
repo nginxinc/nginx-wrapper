@@ -5,7 +5,7 @@ go 1.15
 replace github.com/nginxinc/nginx-wrapper/lib => ../lib
 
 require (
-	github.com/nginxinc/nginx-wrapper/lib v0.0.1
+	github.com/nginxinc/nginx-wrapper/lib v0.0.2
 
 	github.com/davecgh/go-spew v1.1.1
 	github.com/elliotchance/orderedmap v1.3.0
