@@ -264,6 +264,17 @@ ci-run-all-checks: ci-all-linters ## Runs all build checks within a Docker conta
 
 # Misc
 
+.PHONY: changelog
+LAST_VERSION      = $(shell git tag -l | egrep '^v[0-9]+\.[0-9]+\.[0-9]+$$' | sort --version-sort --field-separator=. --reverse | head -n1)
+LAST_VERSION_HASH = $(shell git show --format=%H $(LAST_VERSION) | head -n1)
+changelog: ## Outputs the changes since the last version committed
+	$Q echo 'Changes since $(LAST_VERSION):'
+	$Q git log --format="%s	(%h)" "$(LAST_VERSION_HASH)..HEAD" | \
+		egrep -v '^(ci|chore|docs|build): .*' | \
+		sed 's/: /:\t/g1' | \
+		column -s "	" -t | \
+		sed -e 's/^/ * /'
+
 .PHONY: clean
 clean: ; $(info $(M) cleaning...)	@ ## Cleanup everything
 	@chmod -R +w $(GOPATH) || true
