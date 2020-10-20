@@ -278,7 +278,6 @@ changelog: ## Outputs the changes since the last version committed
 .PHONY: clean
 clean: ; $(info $(M) cleaning...)	@ ## Cleanup everything
 	@chmod -R +w $(GOPATH) || true
-	@rm -rf $(GOPATH) || true
 	@rm -rf target || true
 	@rm -rf test/tests.* test/coverage.*
 
