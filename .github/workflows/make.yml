@@ -24,9 +24,6 @@ jobs:
     - name: Check git commit messages
       run: make commitsar
 
-    - name: Run go lint
-      run: make lint
-
     - name: Run golangci-lint
       run: make golangci-lint
 
