@@ -1,0 +1,41 @@
+server {
+    listen 80;
+    listen [::]:80;
+
+    # ACME-challenge used by CertBot for Let's Encrypt
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://[[index .env "TLS_HOSTNAME"]]\$request_uri;
+    }
+}
+
+server {
+    listen      443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name [[index .env "TLS_HOSTNAME"]];
+
+    # Let's Encrypt configuration
+    ssl_certificate         [[index .env "CERT_DIR"]]/fullchain.pem;
+    ssl_certificate_key     [[index .env "CERT_DIR"]]/privkey.pem;
+    ssl_trusted_certificate [[index .env "CERT_DIR"]]/chain.pem;
+
+    include [[index .env "NGINX_CONF_DIR"]]/options-ssl-nginx.conf;
+    ssl_dhparam [[index .env "NGINX_CONF_DIR"]]/ssl-dhparams.pem;
+
+    # OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

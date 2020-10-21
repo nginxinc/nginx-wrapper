@@ -1,0 +1,35 @@
+# Last reloaded: [[.last_reload_time]]
+
+daemon                off;
+master_process        on;
+pid                   [[.run_path]]/nginx.pid;
+error_log             /dev/stdout info;
+worker_processes      1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       [[index .env "NGINX_CONF_DIR"]]/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    '$status $body_bytes_sent "$http_referer" '
+    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log            /dev/stdout main;
+
+    client_body_temp_path [[.run_path]]/client_body;
+    proxy_temp_path       [[.run_path]]/proxy;
+    fastcgi_temp_path     [[.run_path]]/fastcgi;
+    uwsgi_temp_path       [[.run_path]]/uwsgi;
+    scgi_temp_path        [[.run_path]]/scgi;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    resolver [[index .env "DNS_RESOLVER"]];
+
+    include [[.template_conf_output_path]]/conf.d/*.conf;
+}
