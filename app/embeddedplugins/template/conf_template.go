@@ -18,7 +18,10 @@ package template
 
 // The dependency on the config package means that this plugin will always be embedded
 // and not an external plugin.
-import "github.com/nginxinc/nginx-wrapper/app/config"
+import (
+	"github.com/nginxinc/nginx-wrapper/app/config"
+	"path/filepath"
+)
 
 import (
 	"fmt"
@@ -28,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -53,122 +55,24 @@ func (po PathObject) String() string {
 // templated or copied.
 type Template struct {
 	// map of all template files as keys and output files as values
-	Files *orderedmap.OrderedMap
+	Files                 *orderedmap.OrderedMap
+	TemplateFileSuffix    string
+	ConfTemplatePath      string
+	ConfOutputPath        string
+	TemplateVarLeftDelim  string
+	TemplateVarRightDelim string
 }
 
 // NewTemplate creates a new instance of a Template.
-func NewTemplate() Template {
+func NewTemplate(settings api.Settings) Template {
 	return Template{
-		Files: orderedmap.NewOrderedMap(),
+		Files:                 orderedmap.NewOrderedMap(),
+		TemplateFileSuffix:    settings.GetString(PluginName + ".template_suffix"),
+		ConfTemplatePath:      filepath.Clean(settings.GetString(PluginName + ".conf_template_path")),
+		ConfOutputPath:        filepath.Clean(settings.GetString(PluginName + ".conf_output_path")),
+		TemplateVarLeftDelim:  settings.GetString(PluginName + ".template_var_left_delim"),
+		TemplateVarRightDelim: settings.GetString(PluginName + ".template_var_right_delim"),
 	}
-}
-
-// DiscoverTemplateFiles finds all of the template files within the
-// conf_template_path.
-func (t *Template) DiscoverTemplateFiles(settings api.Settings) error {
-	templatePath := settings.GetString(PluginName + ".conf_template_path")
-	outputPath := settings.GetString(PluginName + ".conf_output_path")
-
-	templatePathFileInfo, templatePathStatErr := os.Stat(templatePath)
-	if templatePathStatErr != nil {
-		return errors.Wrapf(templatePathStatErr,
-			"error opening nginx conf template path (%s)", templatePath)
-	}
-
-	if !templatePathFileInfo.IsDir() {
-		// Validate that our single template file's path
-		err := validateRegularFileInfo(templatePathFileInfo, templatePath)
-		if err != nil {
-			return errors.Wrap(err, "template file is not a valid file")
-		}
-	}
-
-	_, outputPathStatErr := os.Stat(outputPath)
-	if outputPathStatErr != nil {
-		return errors.Wrapf(outputPathStatErr,
-			"error opening nginx conf template output path (%s)", outputPath)
-	}
-
-	// Refresh file list if it already has values
-	if t.Files.Len() > 0 {
-		t.Files = orderedmap.NewOrderedMap()
-	}
-
-	// Process simple logic for a single templated config file
-	if !templatePathFileInfo.IsDir() {
-		outputFile := PathObject{
-			Name:  outputPath + fs.PathSeparator + "nginx.conf",
-			IsDir: false,
-		}
-
-		log.Debug("Adding single template file mapping: ",
-			templatePath, " -> ", outputFile)
-		t.Files.Set(templatePath, outputFile)
-		return nil
-	}
-
-	// Process templates, static files and subdirectories contained within
-	// the template path directory
-	return t.discoverInDirectory(settings, templatePath, outputPath)
-}
-
-func (t *Template) discoverInDirectory(settings api.Settings, templatePath string, outputPath string) error {
-	// Our template conf path is a directory, so we need to walk it for all files
-	walkErr := filepath.Walk(templatePath,
-		func(file string, info os.FileInfo, err error) error {
-			if err != nil {
-				return errors.Wrapf(err, "error processing file (%s)", file)
-			}
-
-			if filepath.Base(file) == settings.GetString(PluginName+".template_suffix") {
-				return errors.Errorf("can't process filename (%s) that is only a suffix", file)
-			}
-
-			var outputFile PathObject
-
-			withoutTemplatePath := strings.TrimPrefix(file, templatePath)
-			withOutputPath := outputPath + withoutTemplatePath
-
-			if info.IsDir() {
-				// We skip processing of the root directory because the
-				// assumption is that it already exists and doesn't need to
-				// be discovered.
-				if file == templatePath {
-					return nil
-				}
-
-				outputFile = PathObject{
-					Name:  withOutputPath + fs.PathSeparator,
-					IsDir: true,
-				}
-			} else {
-				regularFileErr := validateRegularFileInfo(info, file)
-				if regularFileErr != nil {
-					log.Warnf("unable to process (%s) because it isn't a regular file",
-						file)
-					return nil
-				}
-
-				withoutSuffix := strings.TrimSuffix(withOutputPath,
-					settings.GetString(PluginName+".template_suffix"))
-
-				outputFile = PathObject{
-					Name:  withoutSuffix,
-					IsDir: false,
-				}
-			}
-
-			log.Debug("Adding template file mapping: ",
-				file, " -> ", outputFile)
-			t.Files.Set(file, outputFile)
-			return nil
-		})
-
-	if walkErr != nil {
-		return errors.Wrapf(walkErr, "error walking conf_template_path (%s)", templatePath)
-	}
-
-	return nil
 }
 
 // ApplyTemplating runs all templates and performs substitutions using
@@ -194,9 +98,9 @@ func (t *Template) ApplyTemplating(settings api.Settings) *ProcessingError {
 				}
 			}
 			// Template source file and write to destination
-		} else if isTemplateFile(source, settings) {
+		} else if t.isTemplateFile(source) {
 			log.Tracef("Templating file from (%s) to (%s)", source, output.Name)
-			templateErr := applyFileTemplate(source, output.Name, settings)
+			templateErr := t.applyFileTemplate(source, output.Name, settings)
 			if templateErr != nil {
 				if templateErr.TemplateFile == "" {
 					templateErr.TemplateFile = source
@@ -260,18 +164,15 @@ func (t *Template) CleanOutputConfiguration() []error {
 
 // isTemplateFile determines if a file is a candidate for templating based
 // of the file extension.
-func isTemplateFile(source string, settings api.Settings) bool {
-	suffix := settings.GetString(PluginName + ".template_suffix")
-	return strings.HasSuffix(source, suffix)
+func (t *Template) isTemplateFile(source string) bool {
+	return strings.HasSuffix(source, t.TemplateFileSuffix)
 }
 
 // applyFileTemplate templates the source file and writes it to the destination.
-func applyFileTemplate(source string, output string, settings api.Settings) *ProcessingError {
+func (t *Template) applyFileTemplate(source string, output string, settings api.Settings) *ProcessingError {
 	// use the delimiters specified in the config
 	nginxConfTemplate := template.New("nginx-conf")
-	nginxConfTemplate.Delims(
-		settings.GetString(PluginName+".template_var_left_delim"),
-		settings.GetString(PluginName+".template_var_right_delim"))
+	nginxConfTemplate.Delims(t.TemplateVarLeftDelim, t.TemplateVarRightDelim)
 
 	parsedTemplate, parseErr := nginxConfTemplate.ParseFiles(source)
 
@@ -325,21 +226,6 @@ func applyTemplate(parsedTemplate *template.Template, writer io.Writer, settings
 			IsATemplatingProblem: true,
 			Err:                  templateErr,
 		}
-	}
-
-	return nil
-}
-
-// validateRegularFileInfo throws an error if the pathInfo passed refers to anything
-// that isn't a readable regular file.
-func validateRegularFileInfo(fileInfo os.FileInfo, path string) error {
-	if fileInfo.IsDir() {
-		return errors.Errorf("path (%s) is a directory and not a file",
-			path)
-	}
-
-	if !fileInfo.Mode().IsRegular() {
-		return errors.Errorf("path (%s) is not a regular file", path)
 	}
 
 	return nil

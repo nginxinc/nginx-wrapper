@@ -23,142 +23,12 @@ import (
 	"github.com/nginxinc/nginx-wrapper/lib/api"
 	"github.com/nginxinc/nginx-wrapper/lib/fs"
 	"github.com/nginxinc/nginx-wrapper/lib/osenv"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"text/template"
 )
-
-func TestDiscoverTemplateFilesWithSingleFile(t *testing.T) {
-	cfgTemplate := NewTemplate()
-	vconfig := viper.New()
-
-	tempDir := tempDir("nginx-wrapper-unit-tests")
-	mkdir(tempDir, t)
-	confTemplateDir := tempDir + fs.PathSeparator + "conf"
-	mkdir(confTemplateDir, t)
-	confTemplatePath := confTemplateDir + fs.PathSeparator + "nginx.conf.tmpl"
-	outputPath := tempDir + fs.PathSeparator + "out"
-	mkdir(outputPath, t)
-
-	defer os.RemoveAll(tempDir)
-
-	data := []byte("hello")
-	err := ioutil.WriteFile(confTemplatePath, data, os.ModePerm)
-	if err != nil {
-		t.Error(err)
-	}
-
-	vconfig.Set(PluginName+".conf_template_path", confTemplatePath)
-	vconfig.Set(PluginName+".conf_output_path", outputPath)
-	vconfig.Set(PluginName+".template_suffix", ".tmpl")
-
-	err = cfgTemplate.DiscoverTemplateFiles(vconfig)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if cfgTemplate.Files.Len() != 1 {
-		t.Errorf("unexpected number of template files: %d", cfgTemplate.Files.Len())
-	}
-	singleFile := cfgTemplate.Files.Front()
-	assertEquals(singleFile.Key, confTemplatePath, t)
-
-	expectedVal := PathObject{
-		Name:  outputPath + fs.PathSeparator + "nginx.conf",
-		IsDir: false,
-	}
-	assertEquals(singleFile.Value, expectedVal, t)
-}
-
-func TestDiscoverTemplateFilesWithDirectory(t *testing.T) {
-	cfgTemplate := NewTemplate()
-	vconfig := viper.New()
-
-	tempDir := tempDir("nginx-wrapper-unit-tests")
-	mkdir(tempDir, t)
-	confTemplatePath := tempDir + fs.PathSeparator + "conf"
-	mkdir(confTemplatePath, t)
-	outputPath := tempDir + fs.PathSeparator + "out"
-	mkdir(outputPath, t)
-
-	defer os.RemoveAll(tempDir)
-
-	data := []byte("hello")
-	err := ioutil.WriteFile(confTemplatePath+fs.PathSeparator+"nginx.conf.tmpl", data, os.ModePerm)
-	if err != nil {
-		t.Error(err)
-	}
-	err = ioutil.WriteFile(confTemplatePath+fs.PathSeparator+"ordinary.text", data, os.ModePerm)
-	if err != nil {
-		t.Error(err)
-	}
-	subdir := confTemplatePath + fs.PathSeparator + "subdir"
-	mkdir(subdir, t)
-	secondLevel := confTemplatePath + fs.PathSeparator + "subdir" + fs.PathSeparator + "2nd-level"
-	mkdir(secondLevel, t)
-	err = ioutil.WriteFile(secondLevel+fs.PathSeparator+"another.conf.tmpl", data, os.ModePerm)
-	if err != nil {
-		t.Error(err)
-	}
-
-	vconfig.Set(PluginName+".conf_template_path", confTemplatePath)
-	vconfig.Set(PluginName+".conf_output_path", outputPath)
-	vconfig.Set(PluginName+".template_suffix", ".tmpl")
-
-	err = cfgTemplate.DiscoverTemplateFiles(vconfig)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if cfgTemplate.Files.Len() != 5 {
-		t.Errorf("unexpected number of template files: %d", cfgTemplate.Files.Len())
-	}
-
-	first := cfgTemplate.Files.Front()
-	assertEquals(first.Key, confTemplatePath+fs.PathSeparator+"nginx.conf.tmpl", t)
-	expectedFirstVal := PathObject{
-		Name:  outputPath + fs.PathSeparator + "nginx.conf",
-		IsDir: false,
-	}
-	assertEquals(first.Value, expectedFirstVal, t)
-
-	second := first.Next()
-	assertEquals(second.Key, confTemplatePath+fs.PathSeparator+"ordinary.text", t)
-	expectedSecondVal := PathObject{
-		Name:  outputPath + fs.PathSeparator + "ordinary.text",
-		IsDir: false,
-	}
-	assertEquals(second.Value, expectedSecondVal, t)
-
-	third := second.Next()
-	assertEquals(third.Key, subdir, t)
-	expectedThirdVal := PathObject{
-		Name:  outputPath + fs.PathSeparator + "subdir" + fs.PathSeparator,
-		IsDir: true,
-	}
-	assertEquals(third.Value, expectedThirdVal, t)
-
-	fourth := third.Next()
-	assertEquals(fourth.Key, secondLevel, t)
-	expectedFourthVal := PathObject{
-		Name:  expectedThirdVal.Name + "2nd-level" + fs.PathSeparator,
-		IsDir: true,
-	}
-	assertEquals(fourth.Value, expectedFourthVal, t)
-
-	fifth := fourth.Next()
-	assertEquals(fifth.Key, secondLevel+fs.PathSeparator+"another.conf.tmpl", t)
-	expectedFifthVal := PathObject{
-		Name:  expectedFourthVal.Name + "another.conf",
-		IsDir: false,
-	}
-	assertEquals(fifth.Value, expectedFifthVal, t)
-}
 
 func TestCanTemplateCompositeDefaultsFromConfig(t *testing.T) {
 	vconfig := viper.New()
@@ -279,6 +149,8 @@ func TestCanTemplateFile(t *testing.T) {
 	vconfig.Set(PluginName+".template_var_left_delim", "{{")
 	vconfig.Set(PluginName+".template_var_right_delim", "}}")
 
+	testTemplate := NewTemplate(vconfig)
+
 	metadata := Metadata(vconfig)
 	configDefaults := metadata["config_defaults"].(map[string]interface{})
 
@@ -313,7 +185,7 @@ log.level.formatter_options.full_timestamp = true`
 		t.Error(writeErr)
 	}
 
-	applyErr := applyFileTemplate(source, output, vconfig)
+	applyErr := testTemplate.applyFileTemplate(source, output, vconfig)
 	if applyErr != nil {
 		t.Error(applyErr)
 	}

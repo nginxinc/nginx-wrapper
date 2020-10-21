@@ -82,7 +82,7 @@ func Start(context api.PluginStartupContext) error {
 func initTemplatingEvents(settings api.Settings) {
 	log := slog.NewLogger("template-event")
 
-	confTemplate := NewTemplate()
+	confTemplate := NewTemplate(settings)
 
 	// Creates the directory structure for nginx at the run_path specified in the config
 	initRunPathTrigger := events.Trigger{
@@ -114,7 +114,7 @@ func initTemplatingEvents(settings api.Settings) {
 		Function: func(message events.Message) error {
 			settings.Set("last_reload_time", time.Now().UTC().String())
 
-			discoverErr := confTemplate.DiscoverTemplateFiles(settings)
+			discoverErr := confTemplate.DiscoverTemplateFiles()
 			if discoverErr != nil {
 				return errors.Wrap(discoverErr, "error traversing nginx conf template files")
 			}
