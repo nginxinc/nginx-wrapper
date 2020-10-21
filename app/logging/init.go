@@ -20,6 +20,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/nginxinc/nginx-wrapper/app/config"
 	"github.com/nginxinc/nginx-wrapper/lib/api"
+	"github.com/nginxinc/nginx-wrapper/lib/fs"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/oleiade/reflections.v1"
@@ -30,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const uRWgR = 0640
+const uRWgR = fs.OS_USER_RW | fs.OS_GROUP_R
 const logPerm = os.FileMode(uRWgR)
 
 // InitLogger creates and returns a new logger instance based on

@@ -33,10 +33,10 @@ import (
 	"text/template"
 )
 
-const uRWgR = 0640
-const uRWXgRX = 0740
+const uRWgR = fs.OS_USER_RW | fs.OS_GROUP_R
+const uRWXgRX = os.ModeDir | (fs.OS_USER_RWX | fs.OS_GROUP_R | fs.OS_GROUP_X)
 const templateFilePerm = os.FileMode(uRWgR)
-const templateDirPerm = os.FileMode(uRWXgRX)
+const templateDirPerm = uRWXgRX
 
 // PathObject represents an object on the file system - either
 // a directory or a file.
