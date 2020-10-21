@@ -35,7 +35,7 @@ var log = slog.NewLogger("example")
 // in order to discover the available and default configuration
 // properties used by the plugin.
 // nolint:deadcode,unparam,unused,gomnd
-// noinspection GoUnusedExportedFunction .
+// noinspection GoUnusedExportedFunction
 func Metadata(_ api.Settings) map[string]interface{} {
 	return map[string]interface{}{
 		"name": PluginName,
