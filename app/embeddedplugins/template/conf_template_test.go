@@ -269,12 +269,12 @@ func TestCanTemplateSubLevelMapOverridesDefaultFromConfig(t *testing.T) {
 }
 
 func TestCanTemplateFile(t *testing.T) {
-	unitTestTempDir := tempDir("nginx-wrapper-unit-tests")
+	unitTestTempDir := fs.TempDirectoryPath("nginx-wrapper-unit-tests")
 	mkdir(unitTestTempDir, t)
 	defer os.RemoveAll(unitTestTempDir)
 
 	vconfig := viper.New()
-	vconfig.SetDefault("run_path", tempDir("nginx-wrapper"))
+	vconfig.SetDefault("run_path", fs.TempDirectoryPath("nginx-wrapper"))
 	vconfig.SetDefault("conf_path", vconfig.GetString("run_path")+fs.PathSeparator+"conf")
 	vconfig.Set(PluginName+".template_var_left_delim", "{{")
 	vconfig.Set(PluginName+".template_var_right_delim", "}}")
@@ -327,65 +327,6 @@ log.level.formatter_options.full_timestamp = true`
 	assertEquals(actual, expected, t)
 }
 
-func TestValidateRegularFileFailsOnEmptyPath(t *testing.T) {
-	err := validateRegularFile("")
-
-	if err == nil {
-		t.Error("no error thrown for missing path")
-	}
-}
-
-func TestValidateRegularFileFailsOnMissingFile(t *testing.T) {
-	err := validateRegularFile("missing file")
-
-	if err == nil {
-		t.Error("no error thrown for missing binary")
-	}
-}
-
-func TestValidateRegularFileFailsOnDirectory(t *testing.T) {
-	err := validateRegularFile("./test_data")
-
-	if err == nil {
-		t.Error("no error thrown for directory path")
-	}
-}
-
-func TestValidateRegularFileFailsOnNonRegularFile(t *testing.T) {
-	err := validateRegularFile("/dev/null")
-
-	if err == nil {
-		t.Error("no error thrown for directory path")
-	}
-}
-
-func TestValidateRegularFile(t *testing.T) {
-	file := tempFile("some-data", "data!", t)
-	defer os.Remove(file)
-
-	err := validateRegularFile(file)
-
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-// validateRegularFile throws an error if the specified path refers to anything
-// that isn't a readable regular file.
-func validateRegularFile(path string) error {
-	if strings.TrimSpace(path) == "" {
-		return errors.New("unable to stat blank file path")
-	}
-
-	fileInfo, statErr := os.Stat(path)
-
-	if statErr != nil {
-		return errors.Wrapf(statErr, "unable to stat file (%s)", path)
-	}
-
-	return validateRegularFileInfo(fileInfo, path)
-}
-
 func assertCanTemplate(expected string, templateText string, settings api.Settings, t *testing.T) {
 	metadata := Metadata(settings)
 	configDefaults := metadata["config_defaults"].(map[string]interface{})
@@ -424,36 +365,4 @@ func mkdir(path string, t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-}
-
-func tempFile(name string, content string, t *testing.T) string {
-	tmpDir := os.TempDir()
-	file, tmpErr := ioutil.TempFile(tmpDir, name)
-	if tmpErr != nil {
-		t.Error(tmpErr)
-		t.FailNow()
-	}
-
-	_, writeErr := file.Write([]byte(content))
-	if writeErr != nil {
-		t.Error(tmpErr)
-		t.FailNow()
-	}
-
-	closeErr := file.Close()
-	if closeErr != nil {
-		t.Error(closeErr)
-		t.FailNow()
-	}
-
-	return file.Name()
-}
-
-// tempDir generates a temporary directory path that has directory separators normalized.
-// Go on MacOS in some cases will generate paths with double directory separators and this
-// causes the path matching tests to fail. With this function, we can be assured that the
-// generated path is normalized.
-func tempDir(suffix string) string {
-	tempDir := fs.TempDirectoryPath(suffix)
-	return filepath.Clean(tempDir)
 }

@@ -17,6 +17,7 @@
 package fs
 
 import (
+	"os"
 	"testing"
 )
 
@@ -38,4 +39,101 @@ func TestCanFindInPath(t *testing.T) {
 	if path == "" {
 		t.Error("empty path returned")
 	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithDirectory(t *testing.T) {
+	tempDir := makeTestDirectory(t)
+	defer os.RemoveAll(tempDir)
+	err := PathExistsAndIsFileOrDirectory(tempDir)
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithFile(t *testing.T) {
+	tempDir := makeTestDirectory(t)
+	defer os.RemoveAll(tempDir)
+
+	filePath := tempDir + PathSeparator + "original"
+	_, createErr := os.Create(filePath)
+	if createErr != nil {
+		t.Error(createErr)
+	}
+
+	err := PathExistsAndIsFileOrDirectory(filePath)
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithBlankPath(t *testing.T) {
+	err := PathExistsAndIsFileOrDirectory("")
+
+	if err == nil {
+		t.Error("expected error not thrown")
+	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithSymlinkFilePath(t *testing.T) {
+	tempDir := makeTestDirectory(t)
+	defer os.RemoveAll(tempDir)
+
+	sourcePath := tempDir + PathSeparator + "original"
+	_, createErr := os.Create(sourcePath)
+	if createErr != nil {
+		t.Error(createErr)
+	}
+	symLinkPath := tempDir + PathSeparator + "symlink"
+	symLinkErr := os.Symlink(sourcePath, symLinkPath)
+	if symLinkErr != nil {
+		t.Error(symLinkErr)
+	}
+
+	err := PathExistsAndIsFileOrDirectory(symLinkPath)
+
+	if err == nil {
+		t.Error("expected error not thrown")
+	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithSymlinkDirectoryPath(t *testing.T) {
+	tempDir := makeTestDirectory(t)
+	defer os.RemoveAll(tempDir)
+
+	sourcePath := tempDir + PathSeparator + "original"
+	mkdirErr := os.Mkdir(sourcePath, os.ModeDir|(OS_USER_RWX|OS_ALL_R))
+	if mkdirErr != nil {
+		t.Error(mkdirErr)
+	}
+	symLinkPath := tempDir + PathSeparator + "symlink"
+	symLinkErr := os.Symlink(sourcePath, symLinkPath)
+	if symLinkErr != nil {
+		t.Error(symLinkErr)
+	}
+
+	err := PathExistsAndIsFileOrDirectory(symLinkPath)
+
+	if err == nil {
+		t.Error("expected error not thrown")
+	}
+}
+
+func TestPathExistsAndIsFileOrDirectoryWithNonRegularFile(t *testing.T) {
+	err := PathExistsAndIsFileOrDirectory("/dev/null")
+
+	if err == nil {
+		t.Error("expected error not thrown")
+	}
+}
+
+func makeTestDirectory(t *testing.T) string {
+	tempDir := TempDirectoryPath("nginx-wrapper-lib-test" + PathSeparator + t.Name())
+	mkdirErr := os.MkdirAll(tempDir, os.ModeDir|(OS_USER_RWX|OS_ALL_R))
+	if mkdirErr != nil {
+		t.Error(mkdirErr)
+	}
+
+	return tempDir
 }

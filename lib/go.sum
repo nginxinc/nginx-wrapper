@@ -3,6 +3,7 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-eden/common v0.1.6 h1:PKaIDqpVXTfLv/cVnehoruQ5XBAOYBS+de3b3WWiFJs=
 github.com/go-eden/common v0.1.6/go.mod h1:vQiCmqpIvLRb/rsVtMhRnRjsRY9Zhxv9uaXUIX3tqzI=
+github.com/go-eden/common v0.1.8 h1:bP7RppBeBmmhZm/ncpUyiJKG2zsjZCeNCQiiwAa0zmM=
 github.com/go-eden/common v0.1.8/go.mod h1:vQiCmqpIvLRb/rsVtMhRnRjsRY9Zhxv9uaXUIX3tqzI=
 github.com/go-eden/slf4go v1.0.7 h1:9Rfxu8qFwj9qByF9tcmea48egx/bd/nCPWY2Q1vwDfk=
 github.com/go-eden/slf4go v1.0.7/go.mod h1:9pQ/e6/doWqmkddbdHij0oA3BXs8jdC6thSK+RQdv6I=

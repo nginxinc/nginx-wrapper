@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // PathSeparator is the OS dependent path separator character as a string.
@@ -75,5 +76,33 @@ func FindInPath(fileName string) (string, error) {
 
 // TempDirectoryPath returns a path under the system temporary directory.
 func TempDirectoryPath(suffix string) string {
-	return os.TempDir() + PathSeparator + suffix
+	// os.TempDir() generates a temporary directory path that has directory separators normalized.
+	// Go on MacOS in some cases will generate paths with double directory separators and this
+	// causes the path matching tests to fail. With this function, we can be assured that the
+	// generated path is normalized.
+	return filepath.Clean(os.TempDir() + PathSeparator + suffix)
+}
+
+// PathExistsAndIsFileOrDirectory checks to see if a given path exists and if it is a
+// directory or regular file. If the check is successful this function will return nil.
+// Otherwise, it will return an error indicating the problem with the path.
+func PathExistsAndIsFileOrDirectory(path string) error {
+	fileInfo, statErr := os.Lstat(path)
+
+	if statErr != nil {
+		return errors.Wrapf(statErr, "unable to stat path (%s)", path)
+	}
+
+	if !IsRegularFileOrDirectory(fileInfo) {
+		return errors.Errorf("path (%s) is not a directory or regular file", path)
+	}
+
+	return nil
+}
+
+// IsRegularFileOrDirectory returns true if the referenced FileInfo object
+// is a normal file or directory and not a symlink, device or other specialized
+// file type.
+func IsRegularFileOrDirectory(fileInfo os.FileInfo) bool {
+	return fileInfo.IsDir() || fileInfo.Mode().IsRegular()
 }
