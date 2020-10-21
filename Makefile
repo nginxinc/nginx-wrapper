@@ -68,10 +68,6 @@ $(BASE):
 
 # Tools
 
-GOLINT = $(BIN)/golint
-$(BIN)/golint:
-	$(info $(M) building golint...)
-	$Q go get -u golang.org/x/lint/golint
 GOLANGCILINT = $(BIN)/golangci-lint
 $(BIN)/golangci-lint:
 	$(info $(M) building golangci-lint...)
@@ -149,13 +145,6 @@ test-coverage: test-coverage-tools | $(BASE) ; $(info $(M) running coverage test
 	$Q $(GO) tool cover -html=$(COVERAGE_PROFILE) -o $(COVERAGE_HTML)
 	$Q $(GOCOV) convert $(COVERAGE_PROFILE) | $(GOCOVXML) > $(COVERAGE_XML)
 
-.PHONY: lint
-lint: $(GOLINT) ## Run golint check
-	$(info $(M) running golint...) @
-	@$(GOLINT) $(CURDIR)/app/... $(CURDIR)/lib/...
-
-	@find $(CURDIR)/plugins -mindepth 1 -maxdepth 1 -type d \
-		-exec $(GOLINT) "{}/..." \;
 .PHONY: golangci-lint
 golangci-lint: deps $(GOLANGCILINT) ## Run golangci-lint check
 	$(info $(M) running golangci-lint...) @
@@ -172,7 +161,7 @@ commitsar: $(COMMITSAR)  ## Run git commit linter
 	@ $(COMMITSAR)
 
 .PHONY: all-linters
-all-linters: lint golangci-lint commitsar ## Run all linters
+all-linters: golangci-lint commitsar ## Run all linters
 
 .PHONY: fmt
 fmt: ## Run source code formatter
