@@ -47,17 +47,14 @@
 # File-based project format
 *.iws
 
-.idea
-
-# Compiled go binary
-nginx-wrapper
+/.idea
 
 # Makefile build artifacts
-.gopath
-target
-test
+/.gopath
+/target
+/test
 
 # Ignore go.sum in root directory because the go.mod file there shouldn't have any dependencies
-go.sum
+/go.sum
 # Ignore go.mod in root directory because we don't want to commit changes to it
-go.mod
+/go.mod
