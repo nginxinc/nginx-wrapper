@@ -47,7 +47,7 @@ test/coverage/${TIMESTAMP}/%: test/coverage/${TIMESTAMP}
 			-coverprofile="$${COVER_PROFILE}" $$pkg ;\
 	done
 
-test/coverage/${TIMESTAMP}/$(COVERAGE_PROFILE):
+test/coverage/${TIMESTAMP}/$(COVERAGE_PROFILE): $(GOCOVMERGE)
 	$Q $(GOCOVMERGE) $(dir $@)/*.cover > $(dir $@)/$(COVERAGE_PROFILE)
 
 # In the two make targets below, a "cd app" is hard-coded. This isn't in error. We have to
@@ -60,7 +60,7 @@ test/coverage/${TIMESTAMP}/$(COVERAGE_HTML): test/coverage/${TIMESTAMP}/${COVERA
 	$Q $(GO) tool cover -html=$(CURDIR)/$(dir $@)/$(COVERAGE_PROFILE) -o $(CURDIR)/$(dir $@)$(COVERAGE_HTML)
 
 .ONESHELL: test/coverage/${TIMESTAMP}/$(COVERAGE_XML)
-test/coverage/${TIMESTAMP}/$(COVERAGE_XML): test/coverage/${TIMESTAMP}/${COVERAGE_PROFILE}
+test/coverage/${TIMESTAMP}/$(COVERAGE_XML): test/coverage/${TIMESTAMP}/${COVERAGE_PROFILE} $(GOCOV) $(GOCOVXML)
 	$Q cd app #
 	$Q $(GOCOV) convert $(CURDIR)/$(dir $@)/$(COVERAGE_PROFILE) | $(GOCOVXML) > $(CURDIR)/$(dir $@)$(COVERAGE_XML)
 
