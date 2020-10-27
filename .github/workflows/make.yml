@@ -21,9 +21,6 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Check git commit messages
-      run: make commitsar
-
     - name: Run golangci-lint
       run: make golangci-lint
 
