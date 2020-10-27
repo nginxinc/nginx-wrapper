@@ -6,22 +6,23 @@ ENV GOROOT /opt/go
 ENV GOPATH /build/gopath
 ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/go/bin:/build/gopath/bin
 
+COPY bin/install_debian_dependencies.sh /usr/local/bin/install_debian_dependencies.sh
+
 # Setup basic build skeleton and tools
 RUN set -eux \
     export DEBIAN_FRONTEND=noninteractive; \
-    apt-get update -qq; \
-    apt-get install -y -qq build-essential git curl libdigest-sha-perl; \
+    chmod +x /usr/local/bin/install_debian_dependencies.sh; \
+    /usr/local/bin/install_debian_dependencies.sh; \
+    rm /usr/local/bin/install_debian_dependencies.sh; \
     curl -o /tmp/golang.tar.gz --retry 6 -Ls "https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
     echo "${GOLANG_CHECKSUM}  /tmp/golang.tar.gz" | sha256sum -c; \
     tar -C /opt -xzf /tmp/golang.tar.gz; \
-    apt-get purge -y --auto-remove libdigest-sha-perl; \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*; \
     mkdir -p /build/gopath;
 
 # Preinstall linters
 RUN set -eux \
     export DEBIAN_FRONTEND=noninteractive; \
-    go get golang.org/x/lint/golint; \
     go get github.com/wadey/gocovmerge; \
     go get github.com/axw/gocov; \
     go get github.com/AlekSi/gocov-xml; \
