@@ -4,9 +4,9 @@ LAST_VERSION       = $(shell git tag -l | egrep '^v[0-9]+\.[0-9]+\.[0-9]+$$' | s
 LAST_VERSION_HASH  = $(shell git show --format=%H $(LAST_VERSION) | head -n1)
 CHANGES            = $(shell git log --format="%s	(%h)" "$(LAST_VERSION_HASH)..HEAD" | \
 					 	egrep -v '^(ci|chore|docs|build): .*' | \
-                        sed 's/: /:\t/g1' | \
+                        $(SED) 's/: /:\t/g1' | \
                         column -s "	" -t | \
-                        sed -e 's/^/ * /' | \
+                        $(SED) -e 's/^/ * /' | \
                         tr '\n' '\1')
 
 .PHONY: changelog
@@ -70,18 +70,18 @@ version-apply: target ## Applies the version to resources in the repository
 	$Q tail --lines=+$$LAST_VERSION_CHANGELOG_LINE CHANGELOG.md >> target/CHANGELOG.md.new
 	$Q mv target/CHANGELOG.md.new CHANGELOG.md
 	$Q echo "  updating app/go.mod to use nginx-wrapper-lib with latest version"
-	$Q sed --in-place -e "s|github.com/nginxinc/nginx-wrapper/lib\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|github.com/nginxinc/nginx-wrapper/lib v$(VERSION)|" app/go.mod
+	$Q $(SED) --in-place -e "s|github.com/nginxinc/nginx-wrapper/lib\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|github.com/nginxinc/nginx-wrapper/lib v$(VERSION)|" app/go.mod
 	$Q echo "  updating plugins/*/go.mod to use nginxwrapper-lib with latest version"
 	$Q find plugins -maxdepth 2 -mindepth 1 -type f -name go.mod -exec \
-		sed --in-place -e "s|github.com/nginxinc/nginx-wrapper/lib\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|github.com/nginxinc/nginx-wrapper/lib v$(VERSION)|" '{}' \;
+		$(SED) --in-place -e "s|github.com/nginxinc/nginx-wrapper/lib\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|github.com/nginxinc/nginx-wrapper/lib v$(VERSION)|" '{}' \;
 	make package
 	$Q echo "  updating nginx-wrapper version in recipes/*/Dockerfile"
 	$Q find recipes -maxdepth 2 -mindepth 1 -type f -name Dockerfile -exec \
-		sed --in-place -e "s|ENV NGINX_WRAPPER_VERSION\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|ENV NGINX_WRAPPER_VERSION v$(VERSION)|" '{}' \;
+		$(SED) --in-place -e "s|ENV NGINX_WRAPPER_VERSION\s\{1,\}v[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}|ENV NGINX_WRAPPER_VERSION v$(VERSION)|" '{}' \;
 	$Q echo "  updating nginx-wrapper checksum in recipes/*/Dockerfile"
 	WRAPPER_CHECKSUM="$$(cat $(DISTPKGDIR)/nginx-wrapper-$(PLATFORM)_$(ARCH)-v$(VERSION).gz.sha256sum | cut -f1 -d' ')"
 	$Q find recipes -maxdepth 2 -mindepth 1 -type f -name Dockerfile -exec \
-		sed --in-place -e "s|ENV NGINX_WRAPPER_CHECKSUM\s\{1,\}.\{1,\}|ENV NGINX_WRAPPER_CHECKSUM $$WRAPPER_CHECKSUM|" '{}' \;
+		$(SED) --in-place -e "s|ENV NGINX_WRAPPER_CHECKSUM\s\{1,\}.\{1,\}|ENV NGINX_WRAPPER_CHECKSUM $$WRAPPER_CHECKSUM|" '{}' \;
 
 .PHONY: version-commit
 .ONESHELL:

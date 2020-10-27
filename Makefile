@@ -22,7 +22,8 @@ GITHASH       ?= $(shell git rev-parse HEAD)
 
 GOPATH        ?= $(CURDIR)/.gopath
 BIN           := $(GOPATH)/bin
-ARCH          := $(shell uname -m | sed -e 's/x86_64/amd64/g' -e 's/i686/i386/g')
+SED           ?= $(shell which gsed || which sed)
+ARCH          := $(shell uname -m | $(SED) -e 's/x86_64/amd64/g' -e 's/i686/i386/g')
 PLATFORM      := $(shell uname | tr '[:upper:]' '[:lower:]')
 PLUGIN_ROOTS  := $(shell find plugins -maxdepth 1 -mindepth 1 -type d | sort)
 GOPATH        ?= .gopath
