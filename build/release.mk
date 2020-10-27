@@ -59,14 +59,12 @@ version-update: ## Prompts for a new version
 
 .PHONY: version-apply
 .ONESHELL: version-apply
-# Re-read the version from disk because it may have changed
-#version-apply: VERSION=$(shell cat $(CURDIR)/.version 2> /dev/null || echo 0.0.0)
-version-apply: ## Applies the version to resources in the repository
+version-apply: target ## Applies the version to resources in the repository
 	$(info $(M) applying version $(VERSION) to repository) @
 	$Q echo "  updating CHANGELOG.md with latest changes"
 	LAST_VERSION_CHANGELOG_LINE="$$(grep --line-number $(LAST_VERSION) CHANGELOG.md | cut -f1 -d:)"
 	CHANGELOG_HEADER_LINE="$$(expr $$LAST_VERSION_CHANGELOG_LINE - 1)"
-	$Q head --lines=$$CHANGELOG_HEADER_LINE CHANGELOG.md > CHANGELOG.md.new
+	$Q head --lines=$$CHANGELOG_HEADER_LINE CHANGELOG.md > target/CHANGELOG.md.new
 	$Q echo "## $(VERSION)" >> target/CHANGELOG.md.new
 	$Q echo "$(CHANGES)" | tr '\1' '\n' >> target/CHANGELOG.md.new
 	$Q tail --lines=+$$LAST_VERSION_CHANGELOG_LINE CHANGELOG.md >> target/CHANGELOG.md.new
@@ -86,11 +84,12 @@ version-apply: ## Applies the version to resources in the repository
 		sed --in-place -e "s|ENV NGINX_WRAPPER_CHECKSUM\s\{1,\}.\{1,\}|ENV NGINX_WRAPPER_CHECKSUM $$WRAPPER_CHECKSUM|" '{}' \;
 
 .PHONY: version-commit
+.ONESHELL:
 version-commit: ## Prompts to commit the current version to git
 	$(info $(M) committing version $(VERSION) to repository) @
 	$Q git commit --edit -m "chore: incremented version to v$(VERSION)" \
 		.version \
-		.CHANGELOG.md
+		CHANGELOG.md \
 		app/go.mod \
 		$(addsuffix /go.mod,$(PLUGIN_ROOTS)) \
 		$$(find recipes -maxdepth 2 -mindepth 1 -type f -name Dockerfile | xargs)
@@ -98,9 +97,8 @@ version-commit: ## Prompts to commit the current version to git
 	$Q git tag app/v$(VERSION)
 	$Q git tag lib/v$(VERSION)
 
-.PHONY: release-notes
-.ONESHELL: release-notes
-release-notes:
+.ONESHELL: $(DISTPKGDIR)/release_notes.md
+$(DISTPKGDIR)/release_notes.md: $(DISTPKGDIR)
 	$(info $(M) building release notes) @
 	$Q echo 'Changes since last release:' > $(DISTPKGDIR)/release_notes.md
 	$Q echo '```' >> $(DISTPKGDIR)/release_notes.md
@@ -113,12 +111,12 @@ release-notes:
 
 .PHONY: release
 .ONESHELL: release
-release: clean version-update version-apply version-commit
+release: clean version-update version-apply $(DISTPKGDIR)/release_notes.md version-commit
 	$(info $(M) pushing changes to github) @
-	$Q git push --tags
+	$Q git push --tags origin master
 	RELEASE_PKGS="$$(find $(DISTPKGDIR) -type f -name \*.gz | xargs)"
-	PRERELEASE="$$(echo $(VERSION) | grep -qE '^0.[0-9]+\.[0-9]+$' && echo '--prerelease')"
-	$Q gh release create v$(VERSION) "$$RELEASE_PKGS" \
+	PRERELEASE="$$(echo $(VERSION) | grep -qE '^0.[0-9]+\.[0-9]+$$' && echo '--prerelease')"
+	$Q gh release create v$(VERSION) $$RELEASE_PKGS \
 		--notes-file $(DISTPKGDIR)/release_notes.md \
 		--title "v$(VERSION)" \
 		$$PRERELEASE
