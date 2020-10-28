@@ -80,7 +80,12 @@ check_path xargs
 
 # Check to make sure we aren't running in docker
 if [ ! -f /.dockerenv ]; then
-  check_path docker
+  echo -n "${M} Checking to see if docker is installed... "
+  if ! command -v "docker" &> /dev/null; then
+      echo "docker is not in PATH (docker is optional)"
+  else
+      echo "yes"
+  fi
 fi
 
 echo -n "${M} Checking to see if make is GNU Make... "
