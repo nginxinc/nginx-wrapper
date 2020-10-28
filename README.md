@@ -36,6 +36,8 @@ combine to allow for many simplifications of common application architectures.
 * [Custom Authentication Services](doc/use_cases.md#custom-authentication-services)
 * [Service Mesh Proxy Integration](doc/use_cases.md#service-mesh-proxy-integration)
 
+For a list of example configurations, see the [Recipes Wiki](wiki/Recipes).
+
 ## Prerequisites
 
 You will need to have NGINX installed on the same system as nginx-wrapper.
@@ -118,7 +120,11 @@ with your own):
 
 ## Contributing
 
-Please refer to the [Contributing Guidelines](CONTRIBUTING.md).
+The [NGINX Wrapper Development Guide](doc/development.md) has useful 
+information on building and writing code for the wrapper.
+
+Please refer to the [Contributing Guidelines](CONTRIBUTING.md) before doing
+a pull request.
 
 ## License
 
