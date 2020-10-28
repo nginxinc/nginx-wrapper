@@ -62,6 +62,7 @@ check_path column
 check_path date
 check_path egrep
 check_path find
+check_path gcc
 check_path gh
 check_path git
 check_path go
@@ -97,12 +98,16 @@ else
   exit 1
 fi
 
-echo -n "${M} Checking to see if make is GNU Make 4.1+... "
-if [[ ${MAKE_VERSION:9:1} -ge 4 && ${MAKE_VERSION:11:1} -ge 1 ]]; then
+echo -n "${M} Checking to see if make is GNU Make 3.8+... "
+if [[ ${MAKE_VERSION:9:1} -gt 3 ]]; then
   echo "yes - [${MAKE_VERSION:9:3}]"
 else
-  echo "make version is too old: ${MAKE_VERSION:9:3}"
-  exit 1
+  if [[ ${MAKE_VERSION:9:1} -eq 3 && ${MAKE_VERSION:11:1} -ge 8 ]]; then
+      echo "yes - [${MAKE_VERSION:9:3}]"
+  else
+      echo "make version is too old: ${MAKE_VERSION:9:3}"
+      exit 1
+  fi
 fi
 
 echo -n "${M} Checking to see if make is go is 1.15+... "
