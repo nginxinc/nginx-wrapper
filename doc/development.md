@@ -68,7 +68,8 @@ $ ./check_build_dependencies.sh
 
 There are helper scripts available to install the required dependencies on
 [MacOS](../build/bin/install_macos_homebrew_dependencies.sh),
-[Ubuntu](../build/bin/install_ubuntu_dependencies.sh) or 
+[CentOS7](../build/bin/install_centos7_dependencies.sh),
+[Ubuntu](../build/bin/install_ubuntu_dependencies.sh), or 
 [Debian](../build/bin/install_debian_dependencies.sh).
 
 If you are running on MacOS and using [homebrew](https://brew.sh/), you will
