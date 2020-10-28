@@ -17,6 +17,9 @@ run-tests/%:
 	$Q cd $(or $(SRC_DIR_$(subst run-tests/,,$@)),$(subst run-tests/,,$@))
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) ./...
 
+.PHONY: run-tests-plugins
+run-tests-plugins: $(addprefix run-tests/,$(PLUGIN_ROOTS))
+
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
 .PHONY: $(TEST_TARGETS) test-xml check test test-coverate-tools test-coverage
 test-bench:   ARGS=-run=__absolutelynothing__ -bench=. ## Run benchmarks
