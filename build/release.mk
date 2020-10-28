@@ -111,7 +111,7 @@ $(DISTPKGDIR)/release_notes.md: $(DISTPKGDIR)
 
 .PHONY: release
 .ONESHELL: release
-release: clean version-update version-apply $(DISTPKGDIR)/release_notes.md version-commit
+release: clean version-update version-apply $(DISTPKGDIR)/release_notes.md version-commit ## Releases a new version to GitHub
 	$(info $(M) pushing changes to github) @
 	$Q git push --tags origin master
 	RELEASE_PKGS="$$(find $(DISTPKGDIR) -type f -name \*.gz | xargs)"
