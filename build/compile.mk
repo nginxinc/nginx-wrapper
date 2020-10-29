@@ -3,7 +3,7 @@ DEBUGFLAGS     := -gcflags "all=-N -l"
 RELEASEFLAGS   := -tags release
 FLAGS           = -trimpath
 DEBUG          ?= 0
-PLUGIN_TARGETS  = $(foreach plugin,$(PLUGIN_ROOTS),${OUTPUT_DIR}/$(plugin)/$(notdir $(plugin)).${SHAREDLIBEXT})
+PLUGIN_TARGETS  = $(foreach plugin,$(1),${OUTPUT_DIR}/$(plugin)/$(notdir $(plugin)).${SHAREDLIBEXT})
 
 # Define shared library extension based on platform
 ifeq ($(PLATFORM),darwin)
@@ -51,7 +51,7 @@ build-lib: ${OUTPUT_DIR}/nginx-wrapper-lib
 
 .PHONEY: build-plugins
 build-plugins: FLAGS += -buildmode=plugin
-build-plugins: $(PLUGIN_TARGETS)
+build-plugins: $(call PLUGIN_TARGETS,$(PLUGIN_ROOTS))
 
 .PHONEY: all build
 all build: build-lib build-app build-plugins ## Compiles all source trees (app, lib, plugins)
