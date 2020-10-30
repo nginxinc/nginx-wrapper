@@ -8,11 +8,11 @@ require (
 	github.com/nginxinc/nginx-wrapper/lib v0.0.3
 
 	github.com/davecgh/go-spew v1.1.1
+	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/elliotchance/orderedmap v1.3.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-eden/common v0.1.8 // indirect
 	github.com/go-eden/slf4go v1.0.7
-	github.com/google/uuid v1.1.2
 	github.com/iancoleman/strcase v0.1.2
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect

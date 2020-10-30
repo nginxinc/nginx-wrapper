@@ -17,16 +17,11 @@
 package config
 
 import (
-	"encoding/hex"
-	"github.com/google/uuid"
 	"github.com/nginxinc/nginx-wrapper/lib/api"
 	"github.com/nginxinc/nginx-wrapper/lib/fs"
-	"github.com/pkg/errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 /*
@@ -46,7 +41,7 @@ var CoreDefaults = map[string]interface{}{
 	// contains all environment variables as loaded on start up
 	"env": envAsMap(os.Environ()),
 	// unique id for the host OS
-	"host_id": hostID(),
+	"host_id": hostID(defaultHostIDGenerators),
 	// contains a timestamp of the last time nginx was reloaded
 	"last_reload_time": "not reloaded",
 	// path to the nginx modules directory
@@ -99,44 +94,4 @@ func DynamicCoreDefaults(settings api.Settings) map[string]interface{} {
 		// path to subdirectory of run path to write conf files to
 		"conf_path": settings.GetString("run_path") + fs.PathSeparator + "conf",
 	}
-}
-
-// hostID finds a unique identifier for the running host.
-func hostID() string {
-	machineID, machineIDErr := hostIDFromMachineID()
-	if machineIDErr != nil {
-		return machineID
-	}
-
-	// If we can't get the machine id, then we rely on a randomly generated UUID
-	return uuid.New().String()
-}
-
-// hostIDFromMachineID attempts to read a unique identifier from the file /etc/machine-id
-// which is present on a number of different Linux/Unix platforms.
-func hostIDFromMachineID() (string, error) {
-	const validMachineIDLength = 32
-	machineIDFileBytes, readErr := ioutil.ReadFile("/etc/machine-id")
-	if readErr != nil {
-		return "", errors.WithStack(readErr)
-	}
-
-	machineID := strings.TrimSpace(string(machineIDFileBytes))
-	if len(machineID) != validMachineIDLength {
-		return "", errors.Errorf("/etc/machine-id didn't contain an id (actual=%d) "+
-			"with the expected (32) number of characters",
-			len(machineID))
-	}
-
-	machineIDBytes, hexErr := hex.DecodeString(machineID)
-	if hexErr != nil {
-		return "", errors.WithStack(hexErr)
-	}
-
-	machineIDUUID, uuidErr := uuid.FromBytes(machineIDBytes)
-	if uuidErr != nil {
-		return "", errors.WithStack(uuidErr)
-	}
-
-	return machineIDUUID.String(), nil
 }
