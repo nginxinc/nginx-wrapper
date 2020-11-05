@@ -222,3 +222,158 @@ the build tools will function and compile Linux compatible artifacts.
 
 `make release` will release a new version of the nginx-wrapper app, nginx-wrapper library
 and plugins to GitHub.
+
+## Developing Plugins
+
+### Plugin Types
+
+There are two types of plugins used with the wrapper: embedded plugins and
+external plugins (often referred to as just plugins). Both conform to the same 
+API. However, they differ in how they are loaded.
+
+External plugins are distributed as a [go plugin shared library](https://golang.org/pkg/plugin/)
+built with the `-buildmode=plugin` flag. This allows for external plugins to
+be dynamically loaded and distributed as separate files.
+
+Embedded plugins use the same interface as external plugins, but are compiled
+as part of the wrapper application. Each embedded plugin's source code is in 
+a directory within the [app/embeddedplugins](../app/embeddedplugins) directory.
+Ideally, embedded plugins will take on no dependencies on wrapper 
+application code and only depend on the API provided by the nginx wrapper 
+library. By doing so, embedded plugins can be freely removed and changed to
+become an external plugins.
+
+Additionally, when developing external plugins it may be useful to develop
+them initially as embedded plugins in order to use a debugger.
+
+### Adding a New External Plugin
+
+#### Creating the Source Tree
+
+Create a new directory within the directory [./plugins](../plugins). In that 
+directory, create a file called `go.mod` with the following contents and
+substituting values marked as `<value>` appropriately.
+```
+module github.com/nginxinc/nginx-wrapper/plugins/<plugin name>
+
+go 1.15
+
+replace github.com/nginxinc/nginx-wrapper/lib => ../../lib
+
+require (
+	github.com/nginxinc/nginx-wrapper/lib v<current wrapper version>
+    // Add this line if you want to support logging
+	github.com/go-eden/slf4go v<same version of slf4go as used in lib>
+)
+```
+
+Create a new file named `main.go` within your plugin directory. Add the following
+content to the file.
+
+```go
+package main
+
+import (
+    slog "github.com/go-eden/slf4go"
+    "github.com/nginxinc/nginx-wrapper/lib/api"
+)
+
+// PluginName contains the name/id of the plugin.
+const PluginName string = "<my plugin name without spaces>"
+var log = slog.NewLogger(PluginName)
+
+func Metadata(_ api.Settings) map[string]interface{} {
+		return map[string]interface{}{
+    		"name": PluginName,
+    		"config_defaults": map[string]interface{}{},
+    	}
+}
+
+func Start(context api.PluginStartupContext) error {
+    log.Infof("%s plugin started", PluginName)
+	return nil
+}
+```
+
+We have now created the minimum configuration for a plugin.
+
+#### Compiling the Plugin
+
+To compile all plugins, you can issue the following make command:
+```
+make build-plugins
+```
+Alternatively, if you want to only compile a single plugin:
+```
+PLUGIN_ROOTS=plugins/<plugin dir> make clean build-plugins
+```
+
+#### Running the Plugin
+
+Once your plugin is compiled, copy the binary created from the path
+`target/<os_arch>/<release|debug>/plugins/<plugin name>/<plugin name>.<so|dynlib>`
+to the plugin path that you have specified in your NGINX Wrapper configuration. 
+The configuration variable is called `plugin_path` and by default it is set 
+to a subdirectory named `plugins`. For example, if you are running the 
+wrapper in the directory `/opt/nginx-wrapper`, you would copy your newly
+compiled plugin into `/opt/nginx-wrapper/plugins`.
+
+```
+$ cd /opt/nginx-wrapper
+
+$ ls
+bin  nginx-wrapper.toml  plugins  run  template
+
+$ grep plugin_path nginx-wrapper.toml 
+  plugin_path = "./plugins"
+
+$ ls plugins/
+myplugin.so
+```
+
+Once the plugin is copied into the `plugins` directory, you will need to alter
+your configuration to enable it. This is done by adding the name (the name 
+you specified in `const PluginName`) of the plugin to the configuration value 
+`enabled_plugins`.
+
+```
+$ grep enabled_plugins nginx-wrapper.toml 
+  enabled_plugins = [ "coprocess", "template" ]
+
+$ vim nginx-wrapper.toml # edit the file to include myplugin
+
+$ grep enabled_plugins nginx-wrapper.toml 
+  enabled_plugins = [ "coprocess", "template", "myplugin" ] 
+```
+
+Now, let's run `nginx-wrapper`.
+
+```
+./bin/nginx-wrapper --config nginx-wrapper.toml run
+INFO   [2020-10-29T18:42:49Z] load-plugin: started plugin: [template]      
+INFO   [2020-10-29T18:42:49Z] myplugin: myplugin plugin started                    
+INFO   [2020-10-29T18:42:49Z] load-plugin: started plugin: [myplugin]          
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: using the "epoll" event method 
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: nginx/1.19.3                 
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: built by gcc 8.3.0 (Debian 8.3.0-6) 
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: OS: Linux 5.4.0-48-generic   
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: getrlimit(RLIMIT_NOFILE): 1048576:1048576 
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: start worker processes       
+INFO   [2020-10-29T18:42:49Z] nginx: 455#455: start worker process 456     
+```
+
+Here we were able to verify that the plugin's `Start` function was called 
+because of the log line `myplugin: myplugin plugin started`. We can do
+additional troubleshooting by running `nginx-wrapper debug`.
+
+```
+$ ./bin/nginx-wrapper --config nginx-wrapper.toml debug
+time="2020-10-29T18:46:05Z" level=info msg="load-plugin: loaded plugin: [template]"
+time="2020-10-29T18:46:05Z" level=info msg="load-plugin: loaded plugin: [myplugin]"
+                             conf_path: /opt/nginx-wrapper/run/conf
+                       enabled_plugins: [template myplugin]
+...
+```
+
+From the output above, you can see that the `myplugin` plugin was loaded and 
+listed as an enabled plugin.

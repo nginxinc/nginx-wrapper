@@ -52,10 +52,12 @@ format. Examples are included for [JSON](../sample_configs/nginx-wrapper-example
 [TOML](../sample_configs/nginx-wrapper-example.toml) and 
 [YAML](../sample_configs/nginx-wrapper-example.yml).
 
-## Templating
+## Plugins
+
+### Templating
 
 For configuring templates, see the [templating documentation](templating.md).
 
-## Coprocesses
+### Coprocesses
 
 For configuring coprocesses, see the [coprocess documentation](coprocess.md).
