@@ -4,6 +4,10 @@ COVERAGE_MODE    := atomic
 COVERAGE_PROFILE := profile.out
 COVERAGE_XML     := coverage.xml
 COVERAGE_HTML    := index.html
+TEST_TMPDIR      ?= $(CURDIR)/test/tmp
+
+${TEST_TMPDIR}:
+	$Q mkdir -p $(TEST_TMPDIR)
 
 # The running test message is separated so that the unit test results can all
 # be concatenated and viewed in one long list
@@ -13,9 +17,9 @@ test-message:
 
 .PHONY: run-tests/%
 .ONESHELL: run-tests/%
-run-tests/%:
+run-tests/%: $(TEST_TMPDIR)
 	$Q cd $(or $(SRC_DIR_$(subst run-tests/,,$@)),$(subst run-tests/,,$@))
-	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) ./...
+	$Q TMPDIR="$(TEST_TMPDIR)" $(GO) test -timeout $(TIMEOUT)s $(ARGS) ./...
 
 .PHONY: run-tests-plugins
 run-tests-plugins: $(addprefix run-tests/,$(PLUGIN_ROOTS))
@@ -35,15 +39,17 @@ test/coverage/${TIMESTAMP}:
 	$Q mkdir -p $@
 
 .ONESHELL: test/coverage/${TIMESTAMP}/%
-test/coverage/${TIMESTAMP}/%: test/coverage/${TIMESTAMP}
+test/coverage/${TIMESTAMP}/%: $(TEST_TMPDIR) test/coverage/${TIMESTAMP}
 	$Q cd $(subst test/coverage/${TIMESTAMP}/,,$@)
 	PKGS="$$($(GO) list ./... | xargs)"
 	TESTPKGS="$$($(GO) list -f ${TESTPKGFILES} | xargs) $${PKGS}"
+	TMPDIR="$(TEST_TMPDIR)"
 
 	$Q for pkg in $${TESTPKGS}; do \
 		LIST_DEPS="$$($(GO) list -f '{{ join .Deps "\n" }}' $$pkg)"; \
 		COVER_PKG="$$(echo $${LIST_DEPS} | grep '^$(PACKAGE)/' | tr '\n' ',')"; \
 		COVER_PROFILE="$(CURDIR)/test/coverage/${TIMESTAMP}/$$(echo $$pkg | tr "/" "-").cover"; \
+		TMPDIR="$(TEST_TMPDIR)" \
 		$(GO) test \
 			-coverpkg="$${COVER_PKG}$${pkg}" \
 			-covermode=$(COVERAGE_MODE) \
