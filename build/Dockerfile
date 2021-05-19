@@ -1,7 +1,7 @@
-FROM nginx:1.19.3 AS base
+FROM nginx:1.19.10 AS base
 
-ENV GOLANG_VERSION 1.15.3
-ENV GOLANG_CHECKSUM 010a88df924a81ec21b293b5da8f9b11c176d27c0ee3962dc1738d2352d3c02d
+ENV GOLANG_VERSION 1.16.4
+ENV GOLANG_CHECKSUM 7154e88f5a8047aad4b80ebace58a059e36e7e2e4eb3b383127a28c711b4ff59
 ENV GOROOT /opt/go
 ENV GOPATH /build/gopath
 ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/go/bin:/build/gopath/bin
