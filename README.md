@@ -2,6 +2,9 @@
 
 # NGINX Wrapper
 
+# This repository has been archived. There will likely be no further development on the project and security vulnerabilities may be unaddressed.
+
+
 NGINX Wrapper (nginx-wrapper) is a NGINX process wrapper written in go 
 that supports templating and plugins. Templating allows for modification
 of `nginx` conf files before start up and on reload. Plugins allow for 
